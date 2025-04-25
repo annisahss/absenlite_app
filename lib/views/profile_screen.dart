@@ -5,6 +5,7 @@ import '../db/db_helper.dart';
 import '../models/user_model.dart';
 import '../utils/shared_pref_utils.dart';
 import '../theme/theme_provider.dart';
+import 'dashboard_screen.dart'; // ✅ import dashboard screen
 
 class ProfileScreen extends StatefulWidget {
   final UserModel user;
@@ -50,8 +51,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     await SharedPrefUtils.saveLogin(newEmail); // Update session email
     setState(() => isSaving = false);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("Profile updated successfully.")),
+    // ✅ Navigate back to updated dashboard
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => DashboardScreen(user: updatedUser)),
     );
   }
 
@@ -97,7 +100,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
             const SizedBox(height: 30),
             ElevatedButton(
               onPressed: _logout,
-              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red[300]),
               child: const Text("Logout"),
             ),
           ],

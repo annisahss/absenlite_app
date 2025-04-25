@@ -2,10 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:absenlite_app/db/db_helper.dart';
 import 'package:absenlite_app/models/attendance_model.dart';
+import 'package:absenlite_app/models/user_model.dart';
 import 'package:absenlite_app/utils/shared_pref_utils.dart';
+import 'package:absenlite_app/views/dashboard_screen.dart';
 
 class HistoryScreen extends StatefulWidget {
-  const HistoryScreen({super.key});
+  final UserModel user;
+
+  const HistoryScreen({super.key, required this.user});
 
   @override
   State<HistoryScreen> createState() => _HistoryScreenState();
@@ -43,7 +47,22 @@ class _HistoryScreenState extends State<HistoryScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Attendance History")),
+      appBar: AppBar(
+        automaticallyImplyLeading: false,
+        centerTitle: true,
+        title: const Text("Attendance History"),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (_) => DashboardScreen(user: widget.user),
+              ),
+            );
+          },
+        ),
+      ),
       body:
           isLoading
               ? const Center(child: CircularProgressIndicator())

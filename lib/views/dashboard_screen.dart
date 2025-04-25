@@ -26,11 +26,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Position? currentPosition;
   late CameraPosition _mapPosition;
 
+  bool hasClockedInToday = false;
+  String? lastCheckInTime;
+
   @override
   void initState() {
     super.initState();
     _setDateTime();
     _getCurrentLocation();
+    _checkTodayAttendance();
   }
 
   void _setDateTime() {
@@ -42,9 +46,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Future<void> _getCurrentLocation() async {
     try {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        throw Exception('Location services are disabled.');
-      }
+      if (!serviceEnabled) throw Exception('Location services are disabled.');
 
       LocationPermission permission = await Geolocator.checkPermission();
       if (permission == LocationPermission.denied) {
@@ -55,7 +57,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       }
 
       if (permission == LocationPermission.deniedForever) {
-        throw Exception('Location permissions are permanently denied.');
+        throw Exception('Location permission permanently denied.');
       }
 
       currentPosition = await Geolocator.getCurrentPosition(
@@ -83,14 +85,59 @@ class _DashboardScreenState extends State<DashboardScreen> {
     }
   }
 
+  Future<void> _checkTodayAttendance() async {
+    final today = DateFormat('yyyy-MM-dd').format(DateTime.now());
+    final logs = await DBHelper.getAttendanceByEmail(widget.user.email);
+    final todayLogs = logs.where((log) => log.date == today).toList();
+
+    final checkInLog = todayLogs.firstWhere(
+      (log) => log.type == "Check-In",
+      orElse: () => AttendanceModel.empty(),
+    );
+
+    setState(() {
+      hasClockedInToday = checkInLog.type == "Check-In";
+      lastCheckInTime = hasClockedInToday ? checkInLog.time : null;
+    });
+  }
+
   Future<void> _handleAttendance(String type) async {
     if (currentPosition == null) return;
+
     final now = DateTime.now();
+    final today = DateFormat('yyyy-MM-dd').format(now);
+
+    final logs = await DBHelper.getAttendanceByEmail(widget.user.email);
+    final todayLogs = logs.where((log) => log.date == today).toList();
+
+    final alreadyCheckedIn = todayLogs.any((log) => log.type == "Check-In");
+    final alreadyCheckedOut = todayLogs.any((log) => log.type == "Check-Out");
+
+    if (type == "Check-In" && alreadyCheckedIn) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("You already checked in today.")),
+      );
+      return;
+    }
+
+    if (type == "Check-Out" && !alreadyCheckedIn) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("You must check in before checking out.")),
+      );
+      return;
+    }
+
+    if (type == "Check-Out" && alreadyCheckedOut) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("You already checked out today.")),
+      );
+      return;
+    }
 
     final record = AttendanceModel(
       userEmail: widget.user.email,
       type: type,
-      date: DateFormat('yyyy-MM-dd').format(now),
+      date: today,
       time: DateFormat('HH:mm:ss').format(now),
       latitude: currentPosition!.latitude,
       longitude: currentPosition!.longitude,
@@ -98,15 +145,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
 
     await DBHelper.insertAttendance(record);
+    await _checkTodayAttendance(); // Refresh status
 
     if (type == "Check-In") {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(const SnackBar(content: Text("Checked in successfully")));
     } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Checked out successfully")));
+
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (_) => const HistoryScreen()),
+        MaterialPageRoute(builder: (_) => HistoryScreen(user: widget.user)),
       );
     }
   }
@@ -127,25 +179,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              GestureDetector(
-                onTap: _goToProfile,
-                child: const CircleAvatar(
-                  radius: 30,
-                  child: Icon(Icons.person, size: 36),
-                ),
+              // ✅ Avatar, name, and email
+              Row(
+                children: [
+                  GestureDetector(
+                    onTap: _goToProfile,
+                    child: const CircleAvatar(
+                      radius: 30,
+                      child: Icon(Icons.person, size: 36),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        widget.user.name,
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Text(
+                        widget.user.email,
+                        style: const TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              const SizedBox(height: 8),
-              const Text(
-                "Loading...",
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const Text(
-                "Product Manager",
-                style: TextStyle(color: Colors.grey),
-              ),
-              const SizedBox(height: 20),
 
-              // Card
+              const SizedBox(height: 16),
+
+              // ✅ Location & time card
               Card(
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
@@ -160,7 +229,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       Text(formattedDate, style: const TextStyle(fontSize: 16)),
                       const SizedBox(height: 12),
                       SizedBox(
-                        height: 180,
+                        height: 250,
                         child:
                             currentPosition == null
                                 ? const Center(
@@ -189,13 +258,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 ),
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
+
+              // ✅ Show last check-in
+              if (hasClockedInToday && lastCheckInTime != null)
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 8),
+                  child: Text(
+                    "✅ Last Check-In: $lastCheckInTime",
+                    style: const TextStyle(fontSize: 14, color: Colors.green),
+                  ),
+                ),
+
+              // ✅ Attendance buttons
               Row(
                 children: [
                   Expanded(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange,
+                        backgroundColor: Colors.green[100],
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(24),
                         ),
@@ -211,7 +292,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   Expanded(
                     child: ElevatedButton(
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orange,
+                        backgroundColor: Colors.purple[100],
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(24),
                         ),
@@ -227,15 +308,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
 
               const SizedBox(height: 16),
+
+              // ✅ History button
               ElevatedButton(
                 onPressed: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const HistoryScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => HistoryScreen(user: widget.user),
+                    ),
                   );
                 },
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue.shade50,
+                  backgroundColor: Colors.blue[100],
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(24),
                   ),

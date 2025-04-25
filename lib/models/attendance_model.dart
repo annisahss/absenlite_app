@@ -1,12 +1,12 @@
 class AttendanceModel {
-  int? id;
-  String userEmail;
-  String type; // masuk / pulang
-  String date;
-  String time;
-  double latitude;
-  double longitude;
-  String? address;
+  final int? id;
+  final String userEmail;
+  final String type;
+  final String date;
+  final String time;
+  final double latitude;
+  final double longitude;
+  final String? address;
 
   AttendanceModel({
     this.id,
@@ -44,4 +44,15 @@ class AttendanceModel {
       address: map['address'],
     );
   }
+
+  factory AttendanceModel.empty() => AttendanceModel(
+    id: null,
+    userEmail: '',
+    type: '',
+    date: '',
+    time: '',
+    latitude: 0.0,
+    longitude: 0.0,
+    address: '',
+  );
 }

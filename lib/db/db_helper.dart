@@ -1,48 +1,55 @@
-import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
+import 'package:path/path.dart';
 import '../models/user_model.dart';
 import '../models/attendance_model.dart';
 
 class DBHelper {
-  static Database? _database;
+  static Database? _db;
 
   static Future<Database> initDb() async {
-    if (_database != null) return _database!;
-    final path = join(await getDatabasesPath(), 'attendance_app.db');
+    if (_db != null) return _db!;
 
-    _database = await openDatabase(path, version: 1, onCreate: _onCreate);
+    final dbPath = await getDatabasesPath();
+    final path = join(dbPath, 'absenlite.db');
 
-    return _database!;
+    _db = await openDatabase(
+      path,
+      version: 1,
+      onCreate: (db, version) async {
+        // Create users table
+        await db.execute('''
+          CREATE TABLE users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT,
+            email TEXT UNIQUE,
+            password TEXT
+          )
+        ''');
+
+        // Create attendance table
+        await db.execute('''
+          CREATE TABLE attendance (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_email TEXT,
+            type TEXT,
+            date TEXT,
+            time TEXT,
+            latitude REAL,
+            longitude REAL,
+            address TEXT
+          )
+        ''');
+      },
+    );
+
+    return _db!;
   }
 
-  static Future<void> _onCreate(Database db, int version) async {
-    await db.execute('''
-      CREATE TABLE users (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT,
-        email TEXT UNIQUE,
-        password TEXT
-      )
-    ''');
+  // ✅ USER METHODS
 
-    await db.execute('''
-      CREATE TABLE absensi (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        user_email TEXT,
-        type TEXT,
-        date TEXT,
-        time TEXT,
-        latitude REAL,
-        longitude REAL,
-        address TEXT
-      )
-    ''');
-  }
-
-  // USER METHODS
-  static Future<int> insertUser(UserModel user) async {
+  static Future<void> insertUser(UserModel user) async {
     final db = await initDb();
-    return await db.insert('users', user.toMap());
+    await db.insert('users', user.toMap());
   }
 
   static Future<UserModel?> getUser(String email, String password) async {
@@ -52,7 +59,10 @@ class DBHelper {
       where: 'email = ? AND password = ?',
       whereArgs: [email, password],
     );
-    if (result.isNotEmpty) return UserModel.fromMap(result.first);
+
+    if (result.isNotEmpty) {
+      return UserModel.fromMap(result.first);
+    }
     return null;
   }
 
@@ -63,13 +73,16 @@ class DBHelper {
       where: 'email = ?',
       whereArgs: [email],
     );
-    if (result.isNotEmpty) return UserModel.fromMap(result.first);
+
+    if (result.isNotEmpty) {
+      return UserModel.fromMap(result.first);
+    }
     return null;
   }
 
-  static Future<int> updateUser(UserModel user) async {
+  static Future<void> updateUser(UserModel user) async {
     final db = await initDb();
-    return await db.update(
+    await db.update(
       'users',
       user.toMap(),
       where: 'id = ?',
@@ -77,10 +90,11 @@ class DBHelper {
     );
   }
 
-  // ATTENDANCE METHODS
-  static Future<int> insertAttendance(AttendanceModel att) async {
+  // ✅ ATTENDANCE METHODS
+
+  static Future<void> insertAttendance(AttendanceModel attendance) async {
     final db = await initDb();
-    return await db.insert('absensi', att.toMap());
+    await db.insert('attendance', attendance.toMap());
   }
 
   static Future<List<AttendanceModel>> getAttendanceByEmail(
@@ -88,16 +102,17 @@ class DBHelper {
   ) async {
     final db = await initDb();
     final result = await db.query(
-      'absensi',
+      'attendance',
       where: 'user_email = ?',
       whereArgs: [email],
       orderBy: 'date DESC, time DESC',
     );
+
     return result.map((e) => AttendanceModel.fromMap(e)).toList();
   }
 
-  static Future<int> deleteAttendance(int id) async {
+  static Future<void> deleteAttendance(int id) async {
     final db = await initDb();
-    return await db.delete('absensi', where: 'id = ?', whereArgs: [id]);
+    await db.delete('attendance', where: 'id = ?', whereArgs: [id]);
   }
 }
