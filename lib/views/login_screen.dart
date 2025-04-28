@@ -3,6 +3,7 @@ import 'package:absenlite_app/db/db_helper.dart';
 import 'package:absenlite_app/utils/shared_pref_utils.dart';
 import 'package:absenlite_app/views/dashboard_screen.dart';
 import 'package:absenlite_app/views/register_screen.dart';
+import 'package:absenlite_app/theme/app_colors.dart'; // ✅ Import AppColors
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -15,7 +16,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final emailController = TextEditingController();
   final passwordController = TextEditingController();
 
-  bool _obscurePassword = true; // 🔐 State toggle for password visibility
+  bool _obscurePassword = true;
 
   Future<void> _login() async {
     final email = emailController.text.trim();
@@ -48,7 +49,7 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Top Image
+          // Top Half Background Image
           Positioned(
             top: 0,
             left: 0,
@@ -59,13 +60,13 @@ class _LoginScreenState extends State<LoginScreen> {
 
           // Bottom Form Container
           Positioned(
-            top: MediaQuery.of(context).size.height * 0.5,
+            top: MediaQuery.of(context).size.height * 0.45,
             left: 0,
             right: 0,
             bottom: 0,
             child: Container(
               decoration: const BoxDecoration(
-                color: Colors.white,
+                color: AppColors.white,
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(24),
                   topRight: Radius.circular(24),
@@ -89,7 +90,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF6A3EA1),
+                          color: AppColors.primaryIndigo, // ✅ pakai AppColors
                         ),
                       ),
                     ),
@@ -97,7 +98,10 @@ class _LoginScreenState extends State<LoginScreen> {
                     const Center(
                       child: Text(
                         "Please login to your account.",
-                        style: TextStyle(fontSize: 14, color: Colors.black54),
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: AppColors.textMedium, // ✅ pakai AppColors
+                        ),
                       ),
                     ),
                     const SizedBox(height: 30),
@@ -110,12 +114,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           borderRadius: BorderRadius.circular(16),
                         ),
                         filled: true,
-                        fillColor: const Color(0xFFF9F9F9),
+                        fillColor: AppColors.backgroundLavender, // ✅ pakai AppColors
                       ),
                     ),
                     const SizedBox(height: 16),
-
-                    // ✅ Password Field with Eye Icon Toggle
                     TextField(
                       controller: passwordController,
                       obscureText: _obscurePassword,
@@ -124,9 +126,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         prefixIcon: const Icon(Icons.lock_outline),
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_off
-                                : Icons.visibility,
+                            _obscurePassword ? Icons.visibility_off : Icons.visibility,
                           ),
                           onPressed: () {
                             setState(() {
@@ -138,17 +138,16 @@ class _LoginScreenState extends State<LoginScreen> {
                           borderRadius: BorderRadius.circular(16),
                         ),
                         filled: true,
-                        fillColor: const Color(0xFFF9F9F9),
+                        fillColor: AppColors.backgroundLavender, // ✅ pakai AppColors
                       ),
                     ),
-
                     const SizedBox(height: 30),
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: _login,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFD7C4F0),
+                          backgroundColor: AppColors.accentViolet, // ✅ pakai AppColors
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(24),
@@ -161,21 +160,22 @@ class _LoginScreenState extends State<LoginScreen> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text("Don't have an account? "),
+                        const Text(
+                          "Don't have an account? ",
+                          style: TextStyle(color: AppColors.textDark),
+                        ),
                         GestureDetector(
                           onTap: () {
                             Navigator.pushReplacement(
                               context,
-                              MaterialPageRoute(
-                                builder: (_) => const RegisterScreen(),
-                              ),
+                              MaterialPageRoute(builder: (_) => const RegisterScreen()),
                             );
                           },
                           child: const Text(
                             "Register",
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: Colors.purple,
+                              color: AppColors.primaryIndigo, // ✅ pakai AppColors
                             ),
                           ),
                         ),

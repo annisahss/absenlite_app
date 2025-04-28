@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:absenlite_app/db/db_helper.dart';
 import 'package:absenlite_app/models/user_model.dart';
-import 'login_screen.dart';
+import 'package:absenlite_app/views/login_screen.dart';
+import 'package:absenlite_app/theme/app_colors.dart'; 
 
 class RegisterScreen extends StatefulWidget {
   const RegisterScreen({super.key});
@@ -22,9 +23,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final password = passwordController.text.trim();
 
     if (name.isEmpty || email.isEmpty || password.isEmpty) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("All fields are required.")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("All fields are required.")),
+      );
       return;
     }
 
@@ -39,9 +40,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
     final user = UserModel(name: name, email: email, password: password);
     await DBHelper.insertUser(user);
 
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text("Registration successful!")));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("Registration successful!")),
+    );
 
     Navigator.pushReplacement(
       context,
@@ -54,7 +55,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // Top Image - Half of the screen height
+          // Top Half Background Image
           Positioned(
             top: 0,
             left: 0,
@@ -63,17 +64,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
             child: Image.asset('assets/images/bg.jpg', fit: BoxFit.cover),
           ),
 
-          // Form Container with only top rounded borders that fills the bottom half
+          // Bottom Form Container
           Positioned(
-            top:
-                MediaQuery.of(context).size.height *
-                0.5, // Slightly overlap the image
+            top: MediaQuery.of(context).size.height * 0.4,
             left: 0,
             right: 0,
             bottom: 0,
             child: Container(
               decoration: const BoxDecoration(
-                color: Colors.white,
+                color: AppColors.white,
                 borderRadius: BorderRadius.only(
                   topLeft: Radius.circular(24),
                   topRight: Radius.circular(24),
@@ -96,7 +95,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.bold,
-                          color: Color(0xFF6A3EA1),
+                          color: AppColors.primaryIndigo, // ✅ pakai AppColors
                         ),
                       ),
                     ),
@@ -104,10 +103,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const Center(
                       child: Text(
                         "Create your account.",
-                        style: TextStyle(fontSize: 14, color: Colors.black54),
+                        style: TextStyle(fontSize: 14, color: AppColors.textMedium),
                       ),
                     ),
                     const SizedBox(height: 30),
+                    
+                    // Name
                     TextField(
                       controller: nameController,
                       decoration: InputDecoration(
@@ -115,19 +116,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         prefixIcon: const Icon(Icons.person_outline),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
-                          borderSide: const BorderSide(
-                            color: Color(0xFF6A3EA1),
-                          ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
                           borderSide: BorderSide(color: Colors.grey.shade300),
                         ),
                         filled: true,
-                        fillColor: Colors.white,
+                        fillColor: AppColors.backgroundLavender,
                       ),
                     ),
                     const SizedBox(height: 16),
+
+                    // Email
                     TextField(
                       controller: emailController,
                       keyboardType: TextInputType.emailAddress,
@@ -136,19 +136,18 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         prefixIcon: const Icon(Icons.email_outlined),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
-                          borderSide: const BorderSide(
-                            color: Color(0xFF6A3EA1),
-                          ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
                           borderSide: BorderSide(color: Colors.grey.shade300),
                         ),
                         filled: true,
-                        fillColor: Colors.white,
+                        fillColor: AppColors.backgroundLavender,
                       ),
                     ),
                     const SizedBox(height: 16),
+
+                    // Password
                     TextField(
                       controller: passwordController,
                       obscureText: _obscurePassword,
@@ -157,9 +156,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         prefixIcon: const Icon(Icons.lock_outline),
                         suffixIcon: IconButton(
                           icon: Icon(
-                            _obscurePassword
-                                ? Icons.visibility_off
-                                : Icons.visibility,
+                            _obscurePassword ? Icons.visibility_off : Icons.visibility,
                           ),
                           onPressed: () {
                             setState(() {
@@ -169,25 +166,25 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
-                          borderSide: const BorderSide(
-                            color: Color(0xFF6A3EA1),
-                          ),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(16),
                           borderSide: BorderSide(color: Colors.grey.shade300),
                         ),
                         filled: true,
-                        fillColor: Colors.white,
+                        fillColor: AppColors.backgroundLavender,
                       ),
                     ),
+
                     const SizedBox(height: 30),
+
+                    // Register Button
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
                         onPressed: _register,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFFD7C4F0),
+                          backgroundColor: AppColors.accentViolet,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(24),
@@ -196,25 +193,29 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         child: const Text("Register"),
                       ),
                     ),
+
                     const SizedBox(height: 24),
+
+                    // Already have account
                     Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Text("Already have an account? "),
+                        const Text(
+                          "Already have an account? ",
+                          style: TextStyle(color: AppColors.textDark),
+                        ),
                         GestureDetector(
                           onTap: () {
                             Navigator.pushReplacement(
                               context,
-                              MaterialPageRoute(
-                                builder: (_) => const LoginScreen(),
-                              ),
+                              MaterialPageRoute(builder: (_) => const LoginScreen()),
                             );
                           },
                           child: const Text(
                             "Login",
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              color: Color(0xFF6A3EA1),
+                              color: AppColors.primaryIndigo,
                             ),
                           ),
                         ),
