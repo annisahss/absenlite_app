@@ -67,7 +67,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           Positioned(
             top:
                 MediaQuery.of(context).size.height *
-                0.40, // Slightly overlap the image
+                0.5, // Slightly overlap the image
             left: 0,
             right: 0,
             bottom: 0,

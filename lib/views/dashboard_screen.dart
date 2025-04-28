@@ -27,7 +27,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   late CameraPosition _mapPosition;
 
   bool hasClockedInToday = false;
-  String? lastCheckInTime;
+  String? lastClockInTime;
 
   @override
   void initState() {
@@ -35,7 +35,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _setDateTime();
     _getCurrentLocation();
     _checkTodayAttendance();
-    
+
     // Update time every second
     Future.delayed(const Duration(seconds: 1), () {
       if (mounted) {
@@ -99,14 +99,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final logs = await DBHelper.getAttendanceByEmail(widget.user.email);
     final todayLogs = logs.where((log) => log.date == today).toList();
 
-    final checkInLog = todayLogs.firstWhere(
-      (log) => log.type == "Check-In",
+    final clockInLog = todayLogs.firstWhere(
+      (log) => log.type == "Clock-In",
       orElse: () => AttendanceModel.empty(),
     );
 
     setState(() {
-      hasClockedInToday = checkInLog.type == "Check-In";
-      lastCheckInTime = hasClockedInToday ? checkInLog.time : null;
+      hasClockedInToday = clockInLog.type == "Clock-In";
+      lastClockInTime = hasClockedInToday ? clockInLog.time : null;
     });
   }
 
@@ -119,21 +119,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final logs = await DBHelper.getAttendanceByEmail(widget.user.email);
     final todayLogs = logs.where((log) => log.date == today).toList();
 
-    final alreadyCheckedIn = todayLogs.any((log) => log.type == "Check-In");
-    final alreadyCheckedOut = todayLogs.any((log) => log.type == "Check-Out");
+    final alreadyClockedIn = todayLogs.any((log) => log.type == "Clock-In");
+    final alreadyClockedOut = todayLogs.any((log) => log.type == "Clock-Out");
 
-    if (type == "Check-In" && alreadyCheckedIn) {
-      _showSnackBar("You already checked in today.");
+    if (type == "Clock-In" && alreadyClockedIn) {
+      _showSnackBar("You already clocked in today.");
       return;
     }
 
-    if (type == "Check-Out" && !alreadyCheckedIn) {
-      _showSnackBar("You must check in before checking out.");
+    if (type == "Clock-Out" && !alreadyClockedIn) {
+      _showSnackBar("You must clock in before clocking out.");
       return;
     }
 
-    if (type == "Check-Out" && alreadyCheckedOut) {
-      _showSnackBar("You already checked out today.");
+    if (type == "Clock-Out" && alreadyClockedOut) {
+      _showSnackBar("You already clocked out today.");
       return;
     }
 
@@ -141,7 +141,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
       userEmail: widget.user.email,
       type: type,
       date: today,
-      time: DateFormat('HH:mm:ss').format(now),
+      time: DateFormat('hh:mm:ss a').format(now),
       latitude: currentPosition!.latitude,
       longitude: currentPosition!.longitude,
       address: currentAddress,
@@ -150,10 +150,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     await DBHelper.insertAttendance(record);
     await _checkTodayAttendance();
 
-    if (type == "Check-In") {
-      _showSnackBar("Checked in successfully");
+    if (type == "Clock-In") {
+      _showSnackBar("Clocked in successfully");
     } else {
-      _showSnackBar("Checked out successfully");
+      _showSnackBar("Clocked out successfully");
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => HistoryScreen(user: widget.user)),
@@ -162,14 +162,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _showSnackBar(String message) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: AppColors.primaryPurple,
+        backgroundColor:
+            isDarkMode ? AppColors.darkCardColor : AppColors.primaryIndigo,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       ),
     );
   }
@@ -183,8 +184,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDarkMode = Theme.of(context).brightness == Brightness.dark;
+    final backgroundColor =
+        isDarkMode ? AppColors.darkBackground : AppColors.backgroundLavender;
+    final cardBackground = isDarkMode ? AppColors.darkCardColor : Colors.white;
+    final textPrimaryColor = isDarkMode ? Colors.white : AppColors.textDark;
+    final textSecondaryColor =
+        isDarkMode ? Colors.white70 : AppColors.textMedium;
+    final textTertiaryColor = isDarkMode ? Colors.white60 : AppColors.textLight;
+
     return Scaffold(
-      backgroundColor: AppColors.backgroundLilac,
+      backgroundColor: backgroundColor,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
@@ -203,7 +213,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         style: TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
-                          color: AppColors.textDark,
+                          color: textPrimaryColor,
                         ),
                       ),
                       Text(
@@ -211,7 +221,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
-                          color: AppColors.textMedium,
+                          color: textSecondaryColor,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -224,7 +234,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primaryPurple.withOpacity(0.2),
+                            color:
+                                isDarkMode
+                                    ? AppColors.primaryIndigo.withOpacity(0.3)
+                                    : AppColors.primaryIndigo.withOpacity(0.2),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -232,13 +245,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       ),
                       child: CircleAvatar(
                         radius: 24,
-                        backgroundColor: Colors.white,
+                        backgroundColor:
+                            isDarkMode ? AppColors.darkSurface : Colors.white,
                         child: Text(
                           widget.user.name.characters.first.toUpperCase(),
                           style: const TextStyle(
                             fontSize: 18,
                             fontWeight: FontWeight.bold,
-                            color: AppColors.primaryPurple,
+                            color: AppColors.primaryIndigo,
                           ),
                         ),
                       ),
@@ -251,21 +265,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
               // Time & Date Card
               Container(
                 decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [AppColors.primaryPurple, AppColors.darkPurple],
+                  gradient: LinearGradient(
+                    colors:
+                        isDarkMode
+                            ? [AppColors.darkIndigo, AppColors.primaryIndigo]
+                            : [AppColors.primaryIndigo, AppColors.darkIndigo],
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                   ),
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.primaryPurple.withOpacity(0.3),
+                      color:
+                          isDarkMode
+                              ? AppColors.darkIndigo.withOpacity(0.5)
+                              : AppColors.primaryIndigo.withOpacity(0.3),
                       blurRadius: 15,
                       offset: const Offset(0, 10),
                     ),
                   ],
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 24,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -302,41 +325,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             color: Colors.white.withOpacity(0.2),
                             borderRadius: BorderRadius.circular(20),
                           ),
-                          child: hasClockedInToday
-                              ? const Row(
-                                  children: [
-                                    Icon(
-                                      Icons.check_circle,
-                                      color: Colors.white,
-                                      size: 16,
-                                    ),
-                                    SizedBox(width: 4),
-                                    Text(
-                                      "Clocked In",
-                                      style: TextStyle(
+                          child:
+                              hasClockedInToday
+                                  ? const Row(
+                                    children: [
+                                      Icon(
+                                        Icons.check_circle,
                                         color: Colors.white,
-                                        fontWeight: FontWeight.w500,
+                                        size: 16,
                                       ),
-                                    ),
-                                  ],
-                                )
-                              : const Row(
-                                  children: [
-                                    Icon(
-                                      Icons.timer_outlined,
-                                      color: Colors.white,
-                                      size: 16,
-                                    ),
-                                    SizedBox(width: 4),
-                                    Text(
-                                      "Not Clocked In",
-                                      style: TextStyle(
+                                      SizedBox(width: 4),
+                                      Text(
+                                        "Clocked In",
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  )
+                                  : const Row(
+                                    children: [
+                                      Icon(
+                                        Icons.timer_outlined,
                                         color: Colors.white,
-                                        fontWeight: FontWeight.w500,
+                                        size: 16,
                                       ),
-                                    ),
-                                  ],
-                                ),
+                                      SizedBox(width: 4),
+                                      Text(
+                                        "Not Clocked In",
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                         ),
                       ],
                     ),
@@ -388,11 +412,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ],
                     ),
-                    if (hasClockedInToday && lastCheckInTime != null) ...[
+                    if (hasClockedInToday && lastClockInTime != null) ...[
                       const SizedBox(height: 16),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 8),
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(12),
@@ -407,7 +433,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              "Last Check-In: $lastCheckInTime",
+                              "Last Clock-In: $lastClockInTime",
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.w500,
@@ -428,7 +454,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textDark,
+                  color: textPrimaryColor,
                 ),
               ),
               const SizedBox(height: 12),
@@ -436,11 +462,14 @@ class _DashboardScreenState extends State<DashboardScreen> {
               // Location Card with Map
               Container(
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: cardBackground,
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.shadowColor,
+                      color:
+                          isDarkMode
+                              ? AppColors.darkBorderColor
+                              : AppColors.mediumIndigo,
                       blurRadius: 10,
                       offset: const Offset(0, 5),
                     ),
@@ -451,42 +480,53 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   children: [
                     SizedBox(
                       height: 200,
-                      child: currentPosition == null
-                          ? const Center(
-                              child: CircularProgressIndicator(
-                                valueColor: AlwaysStoppedAnimation<Color>(
-                                    AppColors.primaryPurple),
-                              ),
-                            )
-                          : GoogleMap(
-                              initialCameraPosition: _mapPosition,
-                              markers: {
-                                Marker(
-                                  markerId: const MarkerId('me'),
-                                  position: _mapPosition.target,
+                      child:
+                          currentPosition == null
+                              ? Center(
+                                child: CircularProgressIndicator(
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                    isDarkMode
+                                        ? AppColors.accentViolet
+                                        : AppColors.primaryIndigo,
+                                  ),
                                 ),
-                              },
-                              zoomControlsEnabled: false,
-                              myLocationEnabled: true,
-                              myLocationButtonEnabled: false,
-                            ),
+                              )
+                              : GoogleMap(
+                                initialCameraPosition: _mapPosition,
+                                markers: {
+                                  Marker(
+                                    markerId: const MarkerId('me'),
+                                    position: _mapPosition.target,
+                                  ),
+                                },
+                                zoomControlsEnabled: false,
+                                myLocationEnabled: true,
+                                myLocationButtonEnabled: false,
+                                // Apply dark/light styling to map
+                                mapType: MapType.normal,
+                                trafficEnabled: false,
+                              ),
                     ),
                     Container(
                       padding: const EdgeInsets.all(16),
-                      decoration: const BoxDecoration(
-                        color: Colors.white,
-                      ),
+                      decoration: BoxDecoration(color: cardBackground),
                       child: Row(
                         children: [
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: AppColors.lightPurple,
+                              color:
+                                  isDarkMode
+                                      ? AppColors.darkSurface
+                                      : AppColors.lightLavender,
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: const Icon(
+                            child: Icon(
                               Icons.location_on,
-                              color: AppColors.primaryPurple,
+                              color:
+                                  isDarkMode
+                                      ? AppColors.accentViolet
+                                      : AppColors.primaryIndigo,
                               size: 24,
                             ),
                           ),
@@ -499,7 +539,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   "Current Address",
                                   style: TextStyle(
                                     fontSize: 14,
-                                    color: AppColors.textLight,
+                                    color: textTertiaryColor,
                                   ),
                                 ),
                                 const SizedBox(height: 2),
@@ -508,7 +548,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   style: TextStyle(
                                     fontSize: 14,
                                     fontWeight: FontWeight.w500,
-                                    color: AppColors.textDark,
+                                    color: textPrimaryColor,
                                   ),
                                 ),
                               ],
@@ -528,7 +568,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: AppColors.textDark,
+                  color: textPrimaryColor,
                 ),
               ),
               const SizedBox(height: 12),
@@ -538,14 +578,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 children: [
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () => _handleAttendance("Check-In"),
+                      onPressed: () => _handleAttendance("Clock-In"),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: hasClockedInToday
-                            ? AppColors.successLightGreen
-                            : AppColors.successGreen,
-                        foregroundColor: hasClockedInToday
-                            ? AppColors.successGreen
-                            : Colors.white,
+                        backgroundColor:
+                            hasClockedInToday
+                                ? (isDarkMode
+                                    ? AppColors.successGreen.withOpacity(0.3)
+                                    : AppColors.successLightGreen)
+                                : AppColors.successGreen,
+                        foregroundColor:
+                            hasClockedInToday
+                                ? (isDarkMode
+                                    ? AppColors.successGreen
+                                    : AppColors.successGreen)
+                                : Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14),
@@ -576,13 +622,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: hasClockedInToday
-                          ? () => _handleAttendance("Check-Out")
-                          : null,
+                      onPressed:
+                          hasClockedInToday
+                              ? () => _handleAttendance("Clock-Out")
+                              : null,
                       style: ElevatedButton.styleFrom(
                         backgroundColor: AppColors.errorRed,
-                        disabledBackgroundColor: AppColors.errorLightRed,
-                        disabledForegroundColor: AppColors.errorRed,
+                        disabledBackgroundColor:
+                            isDarkMode
+                                ? AppColors.errorRed.withOpacity(0.3)
+                                : AppColors.errorLightRed,
+                        disabledForegroundColor:
+                            isDarkMode
+                                ? AppColors.errorRed.withOpacity(0.5)
+                                : AppColors.errorRed,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
@@ -623,24 +676,37 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     );
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.mediumPurple,
-                    foregroundColor: Colors.white,
+                    backgroundColor:
+                        isDarkMode
+                            ? AppColors.darkSurface
+                            : AppColors.mediumIndigo,
+                    foregroundColor:
+                        isDarkMode ? AppColors.mediumIndigo : Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
                     ),
                     elevation: 2,
                   ),
-                  child: const Row(
+                  child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.history, size: 20),
-                      SizedBox(width: 8),
+                      Icon(
+                        Icons.history,
+                        size: 20,
+                        color:
+                            isDarkMode ? AppColors.accentViolet : Colors.white,
+                      ),
+                      const SizedBox(width: 8),
                       Text(
                         "Attendance History",
                         style: TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w500,
+                          color:
+                              isDarkMode
+                                  ? AppColors.accentViolet
+                                  : Colors.white,
                         ),
                       ),
                     ],

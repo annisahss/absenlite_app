@@ -59,7 +59,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
           // Bottom Form Container
           Positioned(
-            top: MediaQuery.of(context).size.height * 0.45,
+            top: MediaQuery.of(context).size.height * 0.5,
             left: 0,
             right: 0,
             bottom: 0,

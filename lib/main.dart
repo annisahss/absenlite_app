@@ -29,20 +29,20 @@ class MyApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
       theme: ThemeData.light(useMaterial3: true).copyWith(
-        primaryColor: AppColors.primaryPurple,
+        primaryColor: AppColors.primaryIndigo,
         colorScheme: ColorScheme.light(
-          primary: AppColors.primaryPurple,
-          secondary: AppColors.mediumPurple,
+          primary: AppColors.primaryIndigo,
+          secondary: AppColors.mediumIndigo,
           surface: Colors.white,
           background: AppColors.backgroundLilac,
         ),
         scaffoldBackgroundColor: AppColors.backgroundLilac,
       ),
       darkTheme: ThemeData.dark(useMaterial3: true).copyWith(
-        primaryColor: AppColors.darkPurple,
+        primaryColor: AppColors.darkIndigo,
         colorScheme: ColorScheme.dark(
-          primary: AppColors.primaryPurple,
-          secondary: AppColors.mediumPurple,
+          primary: AppColors.primaryIndigo,
+          secondary: AppColors.mediumIndigo,
           surface: const Color(0xFF1E1E1E),
           background: const Color(0xFF121212),
         ),
@@ -84,7 +84,7 @@ class _InitialRouteDeciderState extends State<InitialRouteDecider> {
       return const Scaffold(
         body: Center(
           child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryPurple),
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryIndigo),
           ),
         ),
       );
