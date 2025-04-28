@@ -3,7 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
-
+import '../theme/app_colors.dart';
 import '../models/user_model.dart';
 import '../models/attendance_model.dart';
 import '../db/db_helper.dart';
@@ -35,11 +35,20 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _setDateTime();
     _getCurrentLocation();
     _checkTodayAttendance();
+    
+    // Update time every second
+    Future.delayed(const Duration(seconds: 1), () {
+      if (mounted) {
+        _setDateTime();
+        setState(() {});
+        Future.delayed(const Duration(seconds: 1), () => _setDateTime());
+      }
+    });
   }
 
   void _setDateTime() {
     final now = DateTime.now();
-    formattedTime = DateFormat('h:mm a').format(now);
+    formattedTime = DateFormat('hh:mm:ss a').format(now);
     formattedDate = DateFormat('EEEE, dd MMMM yyyy', 'en_US').format(now);
   }
 
@@ -114,23 +123,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final alreadyCheckedOut = todayLogs.any((log) => log.type == "Check-Out");
 
     if (type == "Check-In" && alreadyCheckedIn) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("You already checked in today.")),
-      );
+      _showSnackBar("You already checked in today.");
       return;
     }
 
     if (type == "Check-Out" && !alreadyCheckedIn) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("You must check in before checking out.")),
-      );
+      _showSnackBar("You must check in before checking out.");
       return;
     }
 
     if (type == "Check-Out" && alreadyCheckedOut) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("You already checked out today.")),
-      );
+      _showSnackBar("You already checked out today.");
       return;
     }
 
@@ -145,22 +148,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
 
     await DBHelper.insertAttendance(record);
-    await _checkTodayAttendance(); // Refresh status
+    await _checkTodayAttendance();
 
     if (type == "Check-In") {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Checked in successfully")));
+      _showSnackBar("Checked in successfully");
     } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("Checked out successfully")));
-
+      _showSnackBar("Checked out successfully");
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (_) => HistoryScreen(user: widget.user)),
       );
     }
+  }
+
+  void _showSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: AppColors.primaryPurple,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+    );
   }
 
   void _goToProfile() {
@@ -173,163 +184,466 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.backgroundLilac,
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(16),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ✅ Avatar, name, and email
+              // App Bar with Profile
               Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  GestureDetector(
-                    onTap: _goToProfile,
-                    child: const CircleAvatar(
-                      radius: 30,
-                      child: Icon(Icons.person, size: 36),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        widget.user.name,
-                        style: const TextStyle(
-                          fontSize: 16,
+                        "AbsenLite",
+                        style: TextStyle(
+                          fontSize: 24,
                           fontWeight: FontWeight.bold,
+                          color: AppColors.textDark,
                         ),
                       ),
                       Text(
-                        widget.user.email,
-                        style: const TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey,
+                        "Hello, ${widget.user.name.split(' ')[0]}",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textMedium,
                         ),
                       ),
+                      const SizedBox(height: 4),
                     ],
+                  ),
+                  GestureDetector(
+                    onTap: _goToProfile,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primaryPurple.withOpacity(0.2),
+                            blurRadius: 10,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: CircleAvatar(
+                        radius: 24,
+                        backgroundColor: Colors.white,
+                        child: Text(
+                          widget.user.name.characters.first.toUpperCase(),
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.primaryPurple,
+                          ),
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ),
+              const SizedBox(height: 24),
 
-              const SizedBox(height: 16),
-
-              // ✅ Location & time card
-              Card(
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
+              // Time & Date Card
+              Container(
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [AppColors.primaryPurple, AppColors.darkPurple],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primaryPurple.withOpacity(0.3),
+                      blurRadius: 15,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
                 ),
-                elevation: 4,
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    children: [
-                      Text(formattedTime, style: const TextStyle(fontSize: 26)),
-                      const SizedBox(height: 4),
-                      Text(formattedDate, style: const TextStyle(fontSize: 16)),
-                      const SizedBox(height: 12),
-                      SizedBox(
-                        height: 250,
-                        child:
-                            currentPosition == null
-                                ? const Center(
-                                  child: CircularProgressIndicator(),
-                                )
-                                : GoogleMap(
-                                  initialCameraPosition: _mapPosition,
-                                  markers: {
-                                    Marker(
-                                      markerId: const MarkerId('me'),
-                                      position: _mapPosition.target,
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              "Working Hours",
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14,
+                              ),
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              "09:00 AM - 05:00 PM",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 6,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: hasClockedInToday
+                              ? const Row(
+                                  children: [
+                                    Icon(
+                                      Icons.check_circle,
+                                      color: Colors.white,
+                                      size: 16,
                                     ),
-                                  },
-                                  zoomControlsEnabled: false,
-                                  myLocationEnabled: true,
+                                    SizedBox(width: 4),
+                                    Text(
+                                      "Clocked In",
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : const Row(
+                                  children: [
+                                    Icon(
+                                      Icons.timer_outlined,
+                                      color: Colors.white,
+                                      size: 16,
+                                    ),
+                                    SizedBox(width: 4),
+                                    Text(
+                                      "Not Clocked In",
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        currentAddress,
-                        textAlign: TextAlign.center,
-                        style: const TextStyle(fontSize: 14),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              "Current Time",
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              formattedTime,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 20,
+                              ),
+                            ),
+                          ],
+                        ),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            const Text(
+                              "Today's Date",
+                              style: TextStyle(
+                                color: Colors.white70,
+                                fontSize: 14,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              formattedDate,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    if (hasClockedInToday && lastCheckInTime != null) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(
+                              Icons.access_time_filled,
+                              color: Colors.white,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              "Last Check-In: $lastCheckInTime",
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
-                  ),
+                  ],
                 ),
               ),
+              const SizedBox(height: 24),
 
-              const SizedBox(height: 20),
-
-              // ✅ Show last check-in
-              if (hasClockedInToday && lastCheckInTime != null)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: Text(
-                    "✅ Last Check-In: $lastCheckInTime",
-                    style: const TextStyle(fontSize: 14, color: Colors.green),
-                  ),
+              // Your Location
+              Text(
+                "Your Location",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textDark,
                 ),
+              ),
+              const SizedBox(height: 12),
 
-              // ✅ Attendance buttons
+              // Location Card with Map
+              Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.shadowColor,
+                      blurRadius: 10,
+                      offset: const Offset(0, 5),
+                    ),
+                  ],
+                ),
+                clipBehavior: Clip.antiAlias,
+                child: Column(
+                  children: [
+                    SizedBox(
+                      height: 200,
+                      child: currentPosition == null
+                          ? const Center(
+                              child: CircularProgressIndicator(
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                    AppColors.primaryPurple),
+                              ),
+                            )
+                          : GoogleMap(
+                              initialCameraPosition: _mapPosition,
+                              markers: {
+                                Marker(
+                                  markerId: const MarkerId('me'),
+                                  position: _mapPosition.target,
+                                ),
+                              },
+                              zoomControlsEnabled: false,
+                              myLocationEnabled: true,
+                              myLocationButtonEnabled: false,
+                            ),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: const BoxDecoration(
+                        color: Colors.white,
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: AppColors.lightPurple,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: const Icon(
+                              Icons.location_on,
+                              color: AppColors.primaryPurple,
+                              size: 24,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  "Current Address",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: AppColors.textLight,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  currentAddress,
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                    color: AppColors.textDark,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // Attendance Actions
+              Text(
+                "Attendance Actions",
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textDark,
+                ),
+              ),
+              const SizedBox(height: 12),
+
+              // Action Buttons
               Row(
                 children: [
                   Expanded(
                     child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green[100],
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(24),
-                        ),
-                      ),
                       onPressed: () => _handleAttendance("Check-In"),
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 14),
-                        child: Text("Clock In"),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: hasClockedInToday
+                            ? AppColors.successLightGreen
+                            : AppColors.successGreen,
+                        foregroundColor: hasClockedInToday
+                            ? AppColors.successGreen
+                            : Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        elevation: hasClockedInToday ? 0 : 2,
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            hasClockedInToday
+                                ? Icons.check_circle
+                                : Icons.login,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Text(
+                            hasClockedInToday ? "Clocked In" : "Clock In",
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
+                      onPressed: hasClockedInToday
+                          ? () => _handleAttendance("Check-Out")
+                          : null,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.purple[100],
+                        backgroundColor: AppColors.errorRed,
+                        disabledBackgroundColor: AppColors.errorLightRed,
+                        disabledForegroundColor: AppColors.errorRed,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 16),
                         shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(24),
+                          borderRadius: BorderRadius.circular(14),
                         ),
+                        elevation: 2,
                       ),
-                      onPressed: () => _handleAttendance("Check-Out"),
-                      child: const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 14),
-                        child: Text("Clock Out"),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.logout, size: 20),
+                          SizedBox(width: 8),
+                          Text(
+                            "Clock Out",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
                 ],
               ),
-
               const SizedBox(height: 16),
 
-              // ✅ History button
-              ElevatedButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => HistoryScreen(user: widget.user),
+              // History Button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => HistoryScreen(user: widget.user),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.mediumPurple,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
                     ),
-                  );
-                },
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue[100],
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(24),
+                    elevation: 2,
                   ),
-                ),
-                child: const Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-                  child: Text(
-                    "Attendance History",
-                    style: TextStyle(color: Colors.black),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.history, size: 20),
+                      SizedBox(width: 8),
+                      Text(
+                        "Attendance History",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

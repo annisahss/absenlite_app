@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import 'theme/theme_provider.dart';
+import 'theme/app_colors.dart';
 import 'views/login_screen.dart';
 import 'views/dashboard_screen.dart';
 import 'utils/shared_pref_utils.dart';
@@ -27,8 +28,25 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       debugShowCheckedModeBanner: false,
       themeMode: themeProvider.isDarkMode ? ThemeMode.dark : ThemeMode.light,
-      theme: ThemeData.light(useMaterial3: true),
-      darkTheme: ThemeData.dark(useMaterial3: true),
+      theme: ThemeData.light(useMaterial3: true).copyWith(
+        primaryColor: AppColors.primaryPurple,
+        colorScheme: ColorScheme.light(
+          primary: AppColors.primaryPurple,
+          secondary: AppColors.mediumPurple,
+          surface: Colors.white,
+          background: AppColors.backgroundLilac,
+        ),
+        scaffoldBackgroundColor: AppColors.backgroundLilac,
+      ),
+      darkTheme: ThemeData.dark(useMaterial3: true).copyWith(
+        primaryColor: AppColors.darkPurple,
+        colorScheme: ColorScheme.dark(
+          primary: AppColors.primaryPurple,
+          secondary: AppColors.mediumPurple,
+          surface: const Color(0xFF1E1E1E),
+          background: const Color(0xFF121212),
+        ),
+      ),
       home: const InitialRouteDecider(),
     );
   }
@@ -63,7 +81,13 @@ class _InitialRouteDeciderState extends State<InitialRouteDecider> {
   @override
   Widget build(BuildContext context) {
     if (isLoading)
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryPurple),
+          ),
+        ),
+      );
     return user != null ? DashboardScreen(user: user!) : const LoginScreen();
   }
 }
